@@ -1,0 +1,129 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              String    @id @default(auto()) @map("_id") @db.ObjectId
+  name            String
+  email           String    @unique
+  password        String
+  role            RoleEnum  @default(USER)
+  resetOTP        String?
+  otpExpiration   DateTime?
+  blogs           Blog[]
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@map("users")
+}
+
+model Category {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  name        String    @unique
+  description String?
+  products    Product[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@map("categories")
+}
+
+model Benchmark {
+  id               String             @id @default(auto()) @map("_id") @db.ObjectId
+  name             String             @unique
+  description      String?
+  productBenchmarks ProductBenchmark[]
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+
+  @@map("benchmarks")
+}
+
+model ProductBenchmark {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  product     Product   @relation(fields: [productId], references: [id])
+  productId   String    @db.ObjectId
+  benchmark   Benchmark @relation(fields: [benchmarkId], references: [id])
+  benchmarkId String    @db.ObjectId
+  score       Float
+  maxScore    Float     @default(100)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([productId, benchmarkId])
+  @@map("product_benchmarks")
+}
+
+model Brand {
+  id        String    @id @default(auto()) @map("_id") @db.ObjectId
+  name      String    @unique
+  products  Product[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@map("brands")
+}
+
+model Product {
+  id                String             @id @default(auto()) @map("_id") @db.ObjectId
+  name              String
+  image             String?
+  description       String?
+  price             Float
+  rating            Float              @default(0)
+  totalRatings      Int               @default(0)
+  onlinePurchaseLink String?
+  category          Category           @relation(fields: [categoryId], references: [id])
+  categoryId        String             @db.ObjectId
+  brand             Brand              @relation(fields: [brandId], references: [id])
+  brandId           String             @db.ObjectId
+  generalDetails    Json
+  features          Json?
+  productBenchmarks ProductBenchmark[]
+  productRatings    ProductRating[]
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  @@map("products")
+}
+
+model ProductRating {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  product   Product  @relation(fields: [productId], references: [id])
+  productId String   @db.ObjectId
+  rating    Float
+  comment   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("product_ratings")
+}
+
+model Blog {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  title       String
+  content     String
+  author      User     @relation(fields: [authorId], references: [id])
+  authorId    String   @db.ObjectId
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("blogs")
+}
+
+enum RoleEnum {
+  SUPER_ADMIN
+  ADMIN
+  USER
+}
